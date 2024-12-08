@@ -27,6 +27,11 @@ export const Hero = () => {
     }
   };
 
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features');
+    featuresSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white py-20">
       <div className="container mx-auto px-4 text-center">
@@ -38,7 +43,7 @@ export const Hero = () => {
           Fast, accurate, and secure.
         </p>
         
-        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
+        <div id="features" className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
           <div className="p-6 bg-white rounded-xl shadow-sm border">
             <FileAudio className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Multiple Formats</h3>
@@ -58,12 +63,20 @@ export const Hero = () => {
           </div>
         </div>
 
-        <button 
-          onClick={handleTryItNow}
-          className="px-8 py-4 bg-primary text-white rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
-        >
-          {user ? 'Try it Now' : 'Login to Try'}
-        </button>
+        <div className="flex justify-center gap-4">
+          <button 
+            onClick={handleTryItNow}
+            className="px-8 py-4 bg-primary text-white rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
+          >
+            {user ? 'Try it Now' : 'Login to Try'}
+          </button>
+          <button 
+            onClick={scrollToFeatures}
+            className="px-8 py-4 bg-white text-primary border border-primary rounded-lg text-lg font-semibold hover:bg-primary/5 transition-colors"
+          >
+            Features
+          </button>
+        </div>
       </div>
     </div>
   );
