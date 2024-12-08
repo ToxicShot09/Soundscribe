@@ -1,6 +1,32 @@
 import { FileAudio, Languages, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from 'react';
 
 export const Hero = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+  }, []);
+
+  const handleTryItNow = () => {
+    if (!user) {
+      navigate('/login');
+    } else {
+      // Scroll to file upload section
+      const uploadSection = document.getElementById('upload-section');
+      uploadSection?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white py-20">
       <div className="container mx-auto px-4 text-center">
@@ -32,8 +58,11 @@ export const Hero = () => {
           </div>
         </div>
 
-        <button className="px-8 py-4 bg-primary text-white rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors">
-          Try it Now
+        <button 
+          onClick={handleTryItNow}
+          className="px-8 py-4 bg-primary text-white rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
+        >
+          {user ? 'Try it Now' : 'Login to Try'}
         </button>
       </div>
     </div>
