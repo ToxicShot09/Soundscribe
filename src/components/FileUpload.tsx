@@ -42,6 +42,7 @@ export const FileUpload = () => {
             file_path: filePath,
             content_type: newFile.type,
             file_size: newFile.size,
+            user_id: user.id  // Add the user_id field
           });
 
         if (dbError) {
