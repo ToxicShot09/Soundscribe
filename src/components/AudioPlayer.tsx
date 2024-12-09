@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AudioControls } from './audio/AudioControls';
+import { AudioProgress } from './audio/AudioProgress';
 
 interface AudioPlayerProps {
   fileName: string;
@@ -34,8 +35,6 @@ export const AudioPlayer = ({
         const { data } = supabase.storage
           .from('audio_files')
           .getPublicUrl(filePath);
-        
-        console.log('Audio URL:', data.publicUrl);
         setAudioUrl(data.publicUrl);
       } catch (error) {
         console.error('Error fetching audio URL:', error);
@@ -78,7 +77,6 @@ export const AudioPlayer = ({
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      console.log('Audio duration:', audioRef.current.duration);
       setDuration(audioRef.current.duration);
     }
   };
@@ -104,8 +102,6 @@ export const AudioPlayer = ({
 
   const handleDelete = async () => {
     try {
-      console.log('Deleting file:', { fileId, filePath });
-      
       // Delete from storage first
       const { error: storageError } = await supabase.storage
         .from('audio_files')
@@ -116,31 +112,23 @@ export const AudioPlayer = ({
         throw storageError;
       }
 
-      // Then delete from database
+      // Then delete from database without using .single()
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId)
-        .single();
+        .eq('id', fileId);
 
       if (dbError) {
         console.error('Database deletion error:', dbError);
         throw dbError;
       }
 
-      console.log('File deleted successfully');
       onDelete(fileId);
       toast.success('Audio file deleted successfully');
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete audio file');
     }
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -172,50 +160,17 @@ export const AudioPlayer = ({
           }}
         />
       )}
-      <div className="space-y-2">
-        <Slider
-          value={[currentTime]}
-          min={0}
-          max={duration || 100}
-          step={0.1}
-          onValueChange={handleSliderChange}
-          className="w-full"
-        />
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-        <div className="flex items-center justify-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={skipBackward}
-            className="h-8 w-8"
-          >
-            <SkipBack className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={togglePlayPause}
-            className="h-10 w-10"
-          >
-            {isPlaying ? (
-              <Pause className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={skipForward}
-            className="h-8 w-8"
-          >
-            <SkipForward className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <AudioProgress
+        currentTime={currentTime}
+        duration={duration}
+        onSliderChange={handleSliderChange}
+      />
+      <AudioControls
+        isPlaying={isPlaying}
+        onPlayPause={togglePlayPause}
+        onSkipForward={skipForward}
+        onSkipBackward={skipBackward}
+      />
     </div>
   );
 };
