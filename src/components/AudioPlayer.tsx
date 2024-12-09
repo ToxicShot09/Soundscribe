@@ -27,14 +27,18 @@ export const AudioPlayer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const fetchAudioUrl = async () => {
       try {
+        console.log('Fetching audio URL for path:', filePath);
         const { data } = supabase.storage
           .from('audio_files')
           .getPublicUrl(filePath);
+        
+        console.log('Generated audio URL:', data.publicUrl);
         setAudioUrl(data.publicUrl);
       } catch (error) {
         console.error('Error fetching audio URL:', error);
@@ -101,7 +105,13 @@ export const AudioPlayer = ({
   };
 
   const handleDelete = async () => {
+    if (isDeleting) return;
+    
+    setIsDeleting(true);
     try {
+      console.log('Starting deletion process for file:', fileId);
+      console.log('File path:', filePath);
+
       // Delete from storage first
       const { error: storageError } = await supabase.storage
         .from('audio_files')
@@ -112,7 +122,9 @@ export const AudioPlayer = ({
         throw storageError;
       }
 
-      // Then delete from database without using .single()
+      console.log('Successfully deleted from storage');
+
+      // Then delete from database
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
@@ -123,11 +135,14 @@ export const AudioPlayer = ({
         throw dbError;
       }
 
+      console.log('Successfully deleted from database');
       onDelete(fileId);
       toast.success('Audio file deleted successfully');
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete audio file');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -139,6 +154,7 @@ export const AudioPlayer = ({
           variant="ghost"
           size="icon"
           onClick={handleDelete}
+          disabled={isDeleting}
           className="h-8 w-8 text-destructive hover:text-destructive/90"
         >
           <Trash2 className="h-4 w-4" />

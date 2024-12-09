@@ -32,19 +32,31 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       fetchAudioFiles();
+    } else {
+      setAudioFiles([]);
     }
   }, [user]);
 
   const fetchAudioFiles = async () => {
-    const { data, error } = await supabase
-      .from('audio_files')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Fetching audio files for user:', user?.id);
+      const { data, error } = await supabase
+        .from('audio_files')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching audio files:', error);
-    } else {
+      if (error) {
+        console.error('Error fetching audio files:', error);
+        toast.error('Failed to load audio files');
+        return;
+      }
+
+      console.log('Fetched audio files:', data);
       setAudioFiles(data || []);
+    } catch (error) {
+      console.error('Error in fetchAudioFiles:', error);
+      toast.error('Failed to load audio files');
     }
   };
 
