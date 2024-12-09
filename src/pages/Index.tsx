@@ -5,7 +5,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/components/ui/use-toast"; // Import toast from the correct location
+import { toast } from "@/components/ui/use-toast";
 
 interface AudioFile {
   id: string;
@@ -69,8 +69,11 @@ const Index = () => {
     }
   };
 
-  const handleDelete = (fileId: string) => {
+  const handleDelete = async (fileId: string) => {
+    console.log('Handling delete for file:', fileId);
     setAudioFiles(prev => prev.filter(file => file.id !== fileId));
+    // Refetch to ensure we have the latest data
+    await fetchAudioFiles();
   };
 
   const handlePlayStateChange = (isPlaying: boolean) => {

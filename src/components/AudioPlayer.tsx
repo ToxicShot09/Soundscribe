@@ -34,12 +34,12 @@ export const AudioPlayer = ({
     const fetchAudioUrl = async () => {
       try {
         console.log('Fetching audio URL for path:', filePath);
-        const { data } = supabase.storage
+        const { data: { publicUrl } } = supabase.storage
           .from('audio_files')
           .getPublicUrl(filePath);
         
-        console.log('Generated audio URL:', data.publicUrl);
-        setAudioUrl(data.publicUrl);
+        console.log('Generated audio URL:', publicUrl);
+        setAudioUrl(publicUrl);
       } catch (error) {
         console.error('Error fetching audio URL:', error);
         toast.error('Failed to load audio file');
