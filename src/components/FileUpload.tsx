@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { supabase } from "@/integrations/supabase/client";
 
 export const FileUpload = () => {
-  const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -42,15 +41,15 @@ export const FileUpload = () => {
             file_path: filePath,
             content_type: newFile.type,
             file_size: newFile.size,
-            user_id: user.id  // Add the user_id field
+            user_id: user.id
           });
 
         if (dbError) {
           throw dbError;
         }
 
-        setFiles([...files, newFile]);
         toast.success('File uploaded successfully!');
+        window.location.reload(); // Refresh the page to show the new file
       } catch (error) {
         console.error('Upload error:', error);
         toast.error('Failed to upload file');
@@ -58,7 +57,7 @@ export const FileUpload = () => {
         setIsUploading(false);
       }
     }
-  }, [files]);
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -92,26 +91,6 @@ export const FileUpload = () => {
           </div>
         )}
       </div>
-
-      {files.length > 0 && (
-        <div className="mt-6 space-y-4">
-          <h3 className="text-lg font-semibold">Uploaded Files</h3>
-          {files.map((file, index) => (
-            <div
-              key={index}
-              className="flex items-center p-4 bg-white rounded-lg shadow-sm border"
-            >
-              <File className="w-6 h-6 text-primary mr-3" />
-              <div className="flex-1">
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
