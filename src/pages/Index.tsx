@@ -16,6 +16,7 @@ interface AudioFile {
 const Index = () => {
   const [user, setUser] = useState(null);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
+  const [isGlobalPlaying, setIsGlobalPlaying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,6 +48,14 @@ const Index = () => {
     }
   };
 
+  const handleDelete = (fileId: string) => {
+    setAudioFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
+  const handlePlayStateChange = (isPlaying: boolean) => {
+    setIsGlobalPlaying(isPlaying);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -66,8 +75,12 @@ const Index = () => {
                   {audioFiles.map((file) => (
                     <AudioPlayer
                       key={file.id}
+                      fileId={file.id}
                       fileName={file.file_name}
                       filePath={file.file_path}
+                      onDelete={handleDelete}
+                      isGlobalPlaying={isGlobalPlaying}
+                      onPlayStateChange={handlePlayStateChange}
                     />
                   ))}
                 </div>
