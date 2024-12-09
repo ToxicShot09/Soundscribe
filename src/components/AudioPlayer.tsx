@@ -25,11 +25,29 @@ export const AudioPlayer = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
+    const fetchAudioUrl = async () => {
+      try {
+        const { data } = supabase.storage
+          .from('audio_files')
+          .getPublicUrl(filePath);
+        
+        console.log('Audio URL:', data.publicUrl);
+        setAudioUrl(data.publicUrl);
+      } catch (error) {
+        console.error('Error fetching audio URL:', error);
+        toast.error('Failed to load audio file');
+      }
+    };
+
+    fetchAudioUrl();
+  }, [filePath]);
+
+  useEffect(() => {
     if (isGlobalPlaying && !isPlaying) {
-      // Another player started playing, pause this one
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -42,7 +60,10 @@ export const AudioPlayer = ({
         audioRef.current.pause();
         onPlayStateChange(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(error => {
+          console.error('Error playing audio:', error);
+          toast.error('Failed to play audio file');
+        });
         onPlayStateChange(true);
       }
       setIsPlaying(!isPlaying);
@@ -57,6 +78,7 @@ export const AudioPlayer = ({
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
+      console.log('Audio duration:', audioRef.current.duration);
       setDuration(audioRef.current.duration);
     }
   };
@@ -82,21 +104,31 @@ export const AudioPlayer = ({
 
   const handleDelete = async () => {
     try {
-      // Delete from storage
+      console.log('Deleting file:', { fileId, filePath });
+      
+      // Delete from storage first
       const { error: storageError } = await supabase.storage
         .from('audio_files')
         .remove([filePath]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        throw storageError;
+      }
 
-      // Delete from database
+      // Then delete from database
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId);
+        .eq('id', fileId)
+        .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database deletion error:', dbError);
+        throw dbError;
+      }
 
+      console.log('File deleted successfully');
       onDelete(fileId);
       toast.success('Audio file deleted successfully');
     } catch (error) {
@@ -124,16 +156,22 @@ export const AudioPlayer = ({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <audio
-        ref={audioRef}
-        src={`${supabase.storage.from('audio_files').getPublicUrl(filePath).data.publicUrl}`}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => {
-          setIsPlaying(false);
-          onPlayStateChange(false);
-        }}
-      />
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={() => {
+            setIsPlaying(false);
+            onPlayStateChange(false);
+          }}
+          onError={(e) => {
+            console.error('Audio error:', e);
+            toast.error('Error loading audio file');
+          }}
+        />
+      )}
       <div className="space-y-2">
         <Slider
           value={[currentTime]}
