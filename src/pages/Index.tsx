@@ -5,6 +5,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast"; // Import toast from the correct location
 
 interface AudioFile {
   id: string;
@@ -48,7 +49,11 @@ const Index = () => {
 
       if (error) {
         console.error('Error fetching audio files:', error);
-        toast.error('Failed to load audio files');
+        toast({
+          title: "Error",
+          description: "Failed to load audio files",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -56,7 +61,11 @@ const Index = () => {
       setAudioFiles(data || []);
     } catch (error) {
       console.error('Error in fetchAudioFiles:', error);
-      toast.error('Failed to load audio files');
+      toast({
+        title: "Error",
+        description: "Failed to load audio files",
+        variant: "destructive"
+      });
     }
   };
 
