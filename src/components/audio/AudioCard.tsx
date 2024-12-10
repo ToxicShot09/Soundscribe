@@ -60,8 +60,7 @@ export const AudioCard = ({
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId)
-        .single();
+        .eq('id', fileId);
 
       if (dbError) {
         console.error('Database deletion error:', dbError);
@@ -138,15 +137,15 @@ export const AudioCard = ({
   };
 
   return (
-    <Card className="w-full bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-2 border-gray-100">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold truncate flex-1 mr-4">{fileName}</CardTitle>
+    <Card className="w-full bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-gray-100 rounded-xl overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardTitle className="text-xl font-semibold truncate flex-1 mr-4 text-gray-800">{fileName}</CardTitle>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleMute}
-            className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
           >
             {volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </Button>
@@ -155,13 +154,13 @@ export const AudioCard = ({
             size="icon"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-6">
         <audio
           ref={audioRef}
           src={audioUrl}
@@ -176,14 +175,14 @@ export const AudioCard = ({
             toast.error('Error loading audio file');
           }}
         />
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="bg-white/50 p-4 rounded-lg backdrop-blur-sm border border-gray-100">
           <AudioProgress
             currentTime={currentTime}
             duration={duration}
             onSliderChange={handleSliderChange}
           />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-2">
           <AudioControls
             isPlaying={isPlaying}
             onPlayPause={togglePlayPause}
