@@ -4,7 +4,11 @@ import { Upload, File } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from "@/integrations/supabase/client";
 
-export const FileUpload = () => {
+interface FileUploadProps {
+  onUploadComplete?: () => void;
+}
+
+export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -49,7 +53,11 @@ export const FileUpload = () => {
         }
 
         toast.success('File uploaded successfully!');
-        window.location.reload(); // Refresh the page to show the new file
+        
+        // Call onUploadComplete if provided
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
       } catch (error) {
         console.error('Upload error:', error);
         toast.error('Failed to upload file');
@@ -57,7 +65,7 @@ export const FileUpload = () => {
         setIsUploading(false);
       }
     }
-  }, []);
+  }, [onUploadComplete]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
