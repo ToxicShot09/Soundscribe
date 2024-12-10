@@ -33,13 +33,18 @@ export const AudioPlayer = ({
   useEffect(() => {
     const fetchAudioUrl = async () => {
       try {
-        console.log('Fetching audio URL for path:', filePath);
-        const { data: { publicUrl } } = supabase.storage
+        // Get the public URL for the audio file
+        const { data } = await supabase.storage
           .from('audio_files')
-          .getPublicUrl(filePath);
-        
-        console.log('Generated audio URL:', publicUrl);
-        setAudioUrl(publicUrl);
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+        if (data?.signedUrl) {
+          console.log('Generated signed URL:', data.signedUrl);
+          setAudioUrl(data.signedUrl);
+        } else {
+          console.error('No signed URL generated');
+          toast.error('Failed to load audio file');
+        }
       } catch (error) {
         console.error('Error fetching audio URL:', error);
         toast.error('Failed to load audio file');
@@ -113,7 +118,7 @@ export const AudioPlayer = ({
       console.log('File path:', filePath);
 
       // Delete from storage first
-      const { error: storageError } = await supabase.storage
+      const { error: storageError, data: storageData } = await supabase.storage
         .from('audio_files')
         .remove([filePath]);
 
@@ -122,20 +127,24 @@ export const AudioPlayer = ({
         throw storageError;
       }
 
+      console.log('Storage deletion response:', storageData);
       console.log('Successfully deleted from storage');
 
       // Then delete from database
-      const { error: dbError } = await supabase
+      const { error: dbError, data: dbData } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId);
+        .eq('id', fileId)
+        .select();
 
       if (dbError) {
         console.error('Database deletion error:', dbError);
         throw dbError;
       }
 
+      console.log('Database deletion response:', dbData);
       console.log('Successfully deleted from database');
+      
       onDelete(fileId);
       toast.success('Audio file deleted successfully');
     } catch (error) {

@@ -5,7 +5,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface AudioFile {
   id: string;
@@ -49,11 +49,7 @@ const Index = () => {
 
       if (error) {
         console.error('Error fetching audio files:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load audio files",
-          variant: "destructive"
-        });
+        toast.error('Failed to load audio files');
         return;
       }
 
@@ -61,16 +57,13 @@ const Index = () => {
       setAudioFiles(data || []);
     } catch (error) {
       console.error('Error in fetchAudioFiles:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load audio files",
-        variant: "destructive"
-      });
+      toast.error('Failed to load audio files');
     }
   };
 
   const handleDelete = async (fileId: string) => {
     console.log('Handling delete for file:', fileId);
+    // Remove the file from state immediately for better UX
     setAudioFiles(prev => prev.filter(file => file.id !== fileId));
     // Refetch to ensure we have the latest data
     await fetchAudioFiles();
@@ -90,7 +83,7 @@ const Index = () => {
             <h2 className="text-3xl font-bold text-center mb-12">
               Upload Your Audio File
             </h2>
-            <FileUpload />
+            <FileUpload onUploadComplete={fetchAudioFiles} />
             
             {audioFiles.length > 0 && (
               <div className="mt-12">
