@@ -62,10 +62,7 @@ const Index = () => {
   };
 
   const handleDelete = async (fileId: string) => {
-    console.log('Handling delete for file:', fileId);
-    // Remove the file from state immediately for better UX
     setAudioFiles(prev => prev.filter(file => file.id !== fileId));
-    // Refetch to ensure we have the latest data
     await fetchAudioFiles();
   };
 
@@ -78,17 +75,19 @@ const Index = () => {
       <Header />
       <Hero />
       {user && (
-        <div id="upload-section" className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Upload Your Audio File
-            </h2>
-            <FileUpload onUploadComplete={fetchAudioFiles} />
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="bg-white rounded-xl shadow-md p-8">
+              <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
+                Upload Your Audio File
+              </h2>
+              <FileUpload onUploadComplete={fetchAudioFiles} />
+            </div>
             
             {audioFiles.length > 0 && (
-              <div className="mt-12">
-                <h3 className="text-2xl font-bold mb-6">Your Audio Files</h3>
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow-md p-8">
+                <h3 className="text-2xl font-bold mb-8 text-gray-800">Your Audio Files</h3>
+                <div className="space-y-6">
                   {audioFiles.map((file) => (
                     <AudioPlayer
                       key={file.id}
