@@ -71,23 +71,25 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Header />
       <Hero />
       {user && (
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto space-y-12">
-            <div className="bg-white rounded-xl shadow-md p-8">
-              <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
+            <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-100">
+              <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
                 Upload Your Audio File
               </h2>
               <FileUpload onUploadComplete={fetchAudioFiles} />
             </div>
             
             {audioFiles.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-8">
-                <h3 className="text-2xl font-bold mb-8 text-gray-800">Your Audio Files</h3>
-                <div className="space-y-6">
+              <div className="space-y-8">
+                <h3 className="text-2xl font-bold text-gray-800 text-center">
+                  Your Audio Library
+                </h3>
+                <div className="grid gap-6">
                   {audioFiles.map((file) => (
                     <AudioPlayer
                       key={file.id}
