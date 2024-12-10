@@ -46,11 +46,11 @@ export const AudioCard = ({
     
     setIsDeleting(true);
     try {
-      // First, delete from database to prevent new fetches from showing the file
+      // First, delete from database
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId);
+        .match({ id: fileId, user_id: (await supabase.auth.getUser()).data.user?.id });
 
       if (dbError) {
         console.error('Database deletion error:', dbError);
@@ -64,18 +64,15 @@ export const AudioCard = ({
 
       if (storageError) {
         console.error('Storage deletion error:', storageError);
-        // Even if storage deletion fails, we proceed since the database record is gone
         toast.error('File partially deleted - storage cleanup failed');
       }
 
+      toast.success('Audio file deleted successfully');
       // Notify parent component about deletion
       onDelete(fileId);
-      toast.success('Audio file deleted successfully');
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete audio file');
-      // Refresh the list to ensure consistent state
-      onDelete(fileId);
     } finally {
       setIsDeleting(false);
     }

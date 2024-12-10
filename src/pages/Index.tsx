@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { FileUpload } from "@/components/FileUpload";
 import { AudioPlayer } from "@/components/AudioPlayer";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,21 +30,15 @@ const Index = () => {
     });
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchAudioFiles();
-    } else {
-      setAudioFiles([]);
-    }
-  }, [user]);
+  const fetchAudioFiles = useCallback(async () => {
+    if (!user?.id) return;
 
-  const fetchAudioFiles = async () => {
     try {
-      console.log('Fetching audio files for user:', user?.id);
+      console.log('Fetching audio files for user:', user.id);
       const { data, error } = await supabase
         .from('audio_files')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -59,10 +53,20 @@ const Index = () => {
       console.error('Error in fetchAudioFiles:', error);
       toast.error('Failed to load audio files');
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAudioFiles();
+    } else {
+      setAudioFiles([]);
+    }
+  }, [user, fetchAudioFiles]);
 
   const handleDelete = async (fileId: string) => {
+    // Optimistically update UI
     setAudioFiles(prev => prev.filter(file => file.id !== fileId));
+    // Refetch to ensure consistency
     await fetchAudioFiles();
   };
 
