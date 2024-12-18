@@ -64,10 +64,20 @@ const Index = () => {
   }, [user, fetchAudioFiles]);
 
   const handleDelete = async (fileId: string) => {
-    // Optimistically update UI
-    setAudioFiles(prev => prev.filter(file => file.id !== fileId));
-    // Refetch to ensure consistency
-    await fetchAudioFiles();
+    try {
+      // Wait for the deletion to complete before updating UI
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay to ensure deletion completes
+      
+      // Update UI after successful deletion
+      setAudioFiles(prev => prev.filter(file => file.id !== fileId));
+      
+      // Refetch to ensure consistency with server
+      await fetchAudioFiles();
+    } catch (error) {
+      console.error('Error handling deletion:', error);
+      // Refetch to restore state in case of error
+      await fetchAudioFiles();
+    }
   };
 
   const handlePlayStateChange = (isPlaying: boolean) => {
