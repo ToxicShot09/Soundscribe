@@ -1,8 +1,3 @@
-import { HfInference } from '@huggingface/inference'
-
-const HF_TOKEN = import.meta.env.VITE_HUGGINGFACE_TOKEN
-const hf = new HfInference(HF_TOKEN)
-
 export interface TranscriptionResult {
   text: string;
   language?: string;
@@ -12,7 +7,7 @@ export interface TranscriptionResult {
   }>;
 }
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function transcribeAudio(
   audioUrl: string,
@@ -21,13 +16,16 @@ export async function transcribeAudio(
 ): Promise<TranscriptionResult> {
   try {
     const response = await fetch(audioUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch audio file');
+    }
+    
     const audioBlob = await response.blob();
-
     const formData = new FormData();
     formData.append('file', audioBlob);
     
     if (sourceLang) {
-      formData.append('source_lang', sourceLang);
+      formData.append('language', sourceLang);
     }
     if (targetLang) {
       formData.append('target_lang', targetLang);
@@ -60,4 +58,4 @@ export async function getSupportedLanguages(): Promise<Record<string, string>> {
     console.error('Error fetching languages:', error);
     throw new Error('Failed to fetch supported languages');
   }
-} 
+}

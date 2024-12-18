@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Volume2, VolumeX, FileText, Languages } from 'lucide-react';
+import { Trash2, Volume2, VolumeX, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AudioControls } from './AudioControls';
@@ -50,8 +50,8 @@ export const AudioCard = ({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   const [languages, setLanguages] = useState<Record<string, string>>({});
-  const [sourceLang, setSourceLang] = useState<string>('');
-  const [targetLang, setTargetLang] = useState<string>('');
+  const [sourceLang, setSourceLang] = useState<string>('auto');
+  const [targetLang, setTargetLang] = useState<string>('none');
 
   useEffect(() => {
     if (isGlobalPlaying && !isPlaying) {
@@ -62,9 +62,17 @@ export const AudioCard = ({
   }, [isGlobalPlaying, isPlaying]);
 
   useEffect(() => {
-    getSupportedLanguages()
-      .then(setLanguages)
-      .catch(console.error);
+    const fetchLanguages = async () => {
+      try {
+        const langs = await getSupportedLanguages();
+        setLanguages(langs);
+      } catch (error) {
+        console.error('Error fetching languages:', error);
+        // Don't show error toast as it might be too intrusive
+        setLanguages({}); // Set empty object to prevent further attempts
+      }
+    };
+    fetchLanguages();
   }, []);
 
   const handleDelete = async () => {
@@ -72,23 +80,33 @@ export const AudioCard = ({
     
     setIsDeleting(true);
     try {
-      // Get user ID first
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         throw new Error('User not authenticated');
       }
 
-      // Delete from database only
+      // Delete from database
       const { error: dbError } = await supabase
         .from('audio_files')
         .delete()
-        .eq('id', fileId)
-        .eq('user_id', user.id);
+        .match({ id: fileId, user_id: user.id });
 
       if (dbError) {
         console.error('Database deletion error:', dbError);
         throw dbError;
+      }
+
+      // Delete from storage
+      const { error: storageError } = await supabase
+        .storage
+        .from('audio_files')
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        toast.error('File partially deleted - storage cleanup failed');
       }
 
       toast.success('Audio file deleted successfully');
@@ -165,9 +183,13 @@ export const AudioCard = ({
     
     setIsTranscribing(true);
     try {
-      const result = await transcribeAudio(audioUrl, sourceLang, targetLang);
+      const result = await transcribeAudio(
+        audioUrl, 
+        sourceLang === 'auto' ? undefined : sourceLang,
+        targetLang === 'none' ? undefined : targetLang
+      );
       setTranscription(result);
-      toast.success(targetLang ? 'Audio translated successfully' : 'Audio transcribed successfully');
+      toast.success(targetLang !== 'none' ? 'Audio translated successfully' : 'Audio transcribed successfully');
     } catch (error) {
       console.error('Transcription error:', error);
       toast.error('Failed to process audio');
@@ -238,7 +260,7 @@ export const AudioCard = ({
                 <SelectValue placeholder="Source language" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Auto-detect</SelectItem>
+                <SelectItem value="auto">Auto-detect</SelectItem>
                 {Object.entries(languages).map(([code, name]) => (
                   <SelectItem key={code} value={code}>{name}</SelectItem>
                 ))}
@@ -250,7 +272,7 @@ export const AudioCard = ({
                 <SelectValue placeholder="Target language" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No translation</SelectItem>
+                <SelectItem value="none">No translation</SelectItem>
                 {Object.entries(languages).map(([code, name]) => (
                   <SelectItem key={code} value={code}>{name}</SelectItem>
                 ))}
@@ -263,7 +285,7 @@ export const AudioCard = ({
               className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              {isTranscribing ? 'Processing...' : targetLang ? 'Translate' : 'Transcribe'}
+              {isTranscribing ? 'Processing...' : targetLang !== 'none' ? 'Translate' : 'Transcribe'}
             </Button>
           </div>
         </div>
@@ -273,7 +295,7 @@ export const AudioCard = ({
             <div className="p-4 bg-gray-50 rounded-lg">
               <h4 className="font-semibold mb-2 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                {targetLang ? 'Translation' : 'Transcription'} 
+                {targetLang !== 'none' ? 'Translation' : 'Transcription'} 
                 {transcription.language && `(${languages[transcription.language] || transcription.language})`}
               </h4>
               <p className="text-gray-700 whitespace-pre-wrap">{transcription.text}</p>
