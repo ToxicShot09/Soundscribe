@@ -1,3 +1,9 @@
+import warnings
+import torch
+
+# Filter out the PyTorch pytree warnings
+warnings.filterwarnings('ignore', message='.*_register_pytree_node.*')
+
 from fastapi import FastAPI, UploadFile, HTTPException, File
 from fastapi.middleware.cors import CORSMiddleware
 import torch
