@@ -183,13 +183,25 @@ export const AudioCard = ({
     
     setIsTranscribing(true);
     try {
+      console.log('Sending request with:', {
+        sourceLang,
+        targetLang
+      });
+
       const result = await transcribeAudio(
         audioUrl, 
         sourceLang === 'auto' ? undefined : sourceLang,
         targetLang === 'none' ? undefined : targetLang
       );
+
+      console.log('Received result:', result);
       setTranscription(result);
-      toast.success(targetLang !== 'none' ? 'Audio translated successfully' : 'Audio transcribed successfully');
+
+      toast.success(
+        result.task === 'translate' 
+          ? 'Audio translated successfully' 
+          : 'Audio transcribed successfully'
+      );
     } catch (error) {
       console.error('Transcription error:', error);
       toast.error('Failed to process audio');
@@ -197,6 +209,7 @@ export const AudioCard = ({
       setIsTranscribing(false);
     }
   };
+
 
   return (
     <Card className="w-full bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-gray-100 rounded-xl overflow-hidden">
@@ -253,25 +266,31 @@ export const AudioCard = ({
           />
         </div>
 
-        <div className="flex justify-between items-center gap-4 mt-4">
-          <div className="flex gap-2 items-center">
+        <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-wrap gap-4 items-center relative z-20">
             <Select value={sourceLang} onValueChange={setSourceLang}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Source language" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                className="z-50 bg-white border border-gray-200 shadow-lg"
+              >
                 <SelectItem value="auto">Auto-detect</SelectItem>
                 {Object.entries(languages).map(([code, name]) => (
                   <SelectItem key={code} value={code}>{name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
+            
             <Select value={targetLang} onValueChange={setTargetLang}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Target language" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                side="bottom" 
+                className="z-50 bg-white border border-gray-200 shadow-lg"
+              >
                 <SelectItem value="none">No translation</SelectItem>
                 {Object.entries(languages).map(([code, name]) => (
                   <SelectItem key={code} value={code}>{name}</SelectItem>
@@ -279,41 +298,34 @@ export const AudioCard = ({
               </SelectContent>
             </Select>
 
-            <Button
+            <button
               onClick={handleTranscribe}
               disabled={isTranscribing}
-              className="flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileText className="h-4 w-4" />
-              {isTranscribing ? 'Processing...' : targetLang !== 'none' ? 'Translate' : 'Transcribe'}
-            </Button>
+              {isTranscribing ? 'Processing...' : targetLang === 'none' ? 'Transcribe' : 'Translate'}
+            </button>
           </div>
-        </div>
 
-        {transcription && (
-          <div className="mt-4 space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                {targetLang !== 'none' ? 'Translation' : 'Transcription'} 
-                {transcription.language && `(${languages[transcription.language] || transcription.language})`}
-              </h4>
+          {transcription && (
+            <div className="relative z-10 mt-4 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-semibold mb-2">
+                {transcription.task === 'translate' ? 'Translation:' : 'Transcription:'}
+              </h3>
               <p className="text-gray-700 whitespace-pre-wrap">{transcription.text}</p>
-              
-              {transcription.timestamps && (
-                <div className="mt-4 text-sm text-gray-500">
-                  <h5 className="font-semibold mb-2">Timestamps</h5>
-                  {transcription.timestamps.map((chunk, index) => (
-                    <div key={index} className="flex gap-2">
-                      <span>{formatTime(chunk.timestamp[0])} - {formatTime(chunk.timestamp[1])}</span>
-                      <span>{chunk.text}</span>
-                    </div>
-                  ))}
-                </div>
+              {transcription.source_language && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Source Language: {languages[transcription.source_language] || transcription.source_language}
+                </p>
+              )}
+              {transcription.target_language && (
+                <p className="text-sm text-gray-500">
+                  Target Language: {languages[transcription.target_language] || transcription.target_language}
+                </p>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );

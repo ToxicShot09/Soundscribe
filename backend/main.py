@@ -1,10 +1,4 @@
-import warnings
-import torch
-
-# Filter out the PyTorch pytree warnings
-warnings.filterwarnings('ignore', message='.*_register_pytree_node.*')
-
-from fastapi import FastAPI, UploadFile, HTTPException, File
+from fastapi import FastAPI, UploadFile, HTTPException, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
@@ -61,7 +55,7 @@ model.to(device)
 # Load processor
 processor = AutoProcessor.from_pretrained(model_id)
 
-# Create pipeline with enhanced configuration
+# Create pipeline with optimized configuration
 pipe = pipeline(
     "automatic-speech-recognition",
     model=model,
@@ -69,8 +63,10 @@ pipe = pipeline(
     feature_extractor=processor.feature_extractor,
     torch_dtype=torch_dtype,
     device=device,
-    chunk_length_s=30,  # Optimal chunk length for large-v3
-    batch_size=16,  # Configurable based on device capabilities
+    max_new_tokens=512,
+    chunk_length_s=30,
+    batch_size=8,  # Reduced batch size for better accuracy
+    return_timestamps=True
 )
 
 SUPPORTED_LANGUAGES = {
@@ -175,14 +171,17 @@ SUPPORTED_LANGUAGES = {
     "zh": "Chinese"
 }
 
+VALID_TASKS = ["transcribe", "translate"]
+
 @app.post("/transcribe/")
 async def transcribe_audio(
     file: UploadFile = File(...), 
-    language: str = None, 
-    task: str = "transcribe"
+    language: str = Form(None),
+    target_lang: str = Form(None),
+    task: str = Form("transcribe")
 ):
     try:
-        # Validate language if specified
+        # Validate inputs
         if language and language not in SUPPORTED_LANGUAGES:
             raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
 
@@ -193,34 +192,51 @@ async def transcribe_audio(
             temp_file_path = temp_file.name
 
         try:
-            # Prepare generation kwargs - only use supported Whisper generation parameters
+            # Base generation kwargs
             generate_kwargs = {
-                "max_new_tokens": 512,
-                "num_beams": 1,
-                "do_sample": False,  # Enable sampling
-                "temperature": 1.0,  # Single float value instead of a list
+                "max_new_tokens": 448,
+                "do_sample": True,
+                "temperature": 0.2,
+                "num_beams": 5,
+                "length_penalty": 1.0,
+                "no_repeat_ngram_size": 3,
             }
 
-            # Add language and task if specified
-            if language:
-                generate_kwargs["language"] = language
-            if task:
-                generate_kwargs["task"] = task
+            # For translation, we need to:
+            # 1. Set the source language (if provided)
+            # 2. Force the task to "translate" which will translate to English
+            if task == "translate":
+                generate_kwargs.update({
+                    "task": "translate",  # This tells Whisper to translate to English
+                    "language": language if language and language != "auto" else None,
+                })
+                print(f"Translation kwargs: {generate_kwargs}")
+            else:
+                generate_kwargs.update({
+                    "task": "transcribe",
+                    "language": language if language and language != "auto" else None,
+                })
+                print(f"Transcription kwargs: {generate_kwargs}")
 
-            # Transcribe the audio
+            # Process audio
             result = pipe(
-                temp_file_path, 
-                generate_kwargs=generate_kwargs,
-                return_timestamps=True  # Explicitly request timestamps
+                temp_file_path,
+                return_timestamps=True,
+                generate_kwargs=generate_kwargs
             )
+
+            print(f"Processing completed. Task: {task}, Result: {result}")
 
             return {
                 "text": result["text"],
-                "chunks": result.get("chunks", [])
+                "chunks": result.get("chunks", []),
+                "task": task,
+                "source_language": language or "auto",
+                "target_language": "en" if task == "translate" else None
             }
             
         finally:
-            # Clean up the temporary file
+            # Cleanup
             os.unlink(temp_file_path)
             
     except Exception as e:

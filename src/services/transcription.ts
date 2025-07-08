@@ -1,10 +1,12 @@
 export interface TranscriptionResult {
   text: string;
-  language?: string;
-  timestamps?: Array<{
+  chunks?: Array<{
     text: string;
     timestamp: [number, number];
   }>;
+  task?: string;
+  source_language?: string;
+  target_language?: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -24,11 +26,17 @@ export async function transcribeAudio(
     const formData = new FormData();
     formData.append('file', audioBlob);
     
-    if (sourceLang) {
+    // Set source language if specified and not auto
+    if (sourceLang && sourceLang !== 'auto') {
       formData.append('language', sourceLang);
     }
-    if (targetLang) {
+    
+    // Set target language and task
+    if (targetLang && targetLang !== 'none') {
       formData.append('target_lang', targetLang);
+      formData.append('task', 'translate');
+    } else {
+      formData.append('task', 'transcribe');
     }
 
     const transcriptionResponse = await fetch(`${API_URL}/transcribe`, {
@@ -37,6 +45,8 @@ export async function transcribeAudio(
     });
 
     if (!transcriptionResponse.ok) {
+      const error = await transcriptionResponse.text();
+      console.error('Server error:', error);
       throw new Error('Transcription failed');
     }
 
