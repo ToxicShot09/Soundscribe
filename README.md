@@ -1,4 +1,4 @@
-# Soundscribe Translator
+# Soundscribe Transcriber
 
 ## Overview
 Soundscribe Translator is a project designed to transcribe and translate audio files using advanced machine learning models, including OpenAI's Whisper.
