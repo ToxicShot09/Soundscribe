@@ -1,4 +1,4 @@
-import { FileAudio, Languages, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { Mic, Languages, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -7,9 +7,9 @@ import { Waveform } from './Waveform';
 
 const FEATURES = [
   {
-    icon: FileAudio,
-    title: "Any common format",
-    description: "Drop in MP3, WAV, or FLAC and play it back right in the browser.",
+    icon: Mic,
+    title: "Record or upload",
+    description: "Speak straight into your mic, or drop in MP3, WAV, or FLAC files.",
   },
   {
     icon: Languages,

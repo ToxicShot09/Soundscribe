@@ -1,6 +1,6 @@
 # Soundscribe
 
-AI-powered audio transcription and translation. Upload an audio file, play it back in the browser, and get a Whisper-generated transcript — or an English translation — in seconds.
+AI-powered audio transcription and translation. Upload an audio file — or record straight from your microphone — play it back in the browser, and get a Whisper-generated transcript or English translation in seconds.
 
 **Stack:** React + TypeScript + Vite + Tailwind/shadcn-ui · Supabase (auth, Postgres, storage, edge functions) · OpenAI Whisper API
 
@@ -17,7 +17,7 @@ Browser (React SPA, Vercel)
 ```
 
 1. Users sign up / log in via Supabase Auth.
-2. Audio files (MP3/WAV/FLAC, ≤10MB) upload to a private storage bucket; metadata lands in Postgres with RLS so users only ever see their own files.
+2. Audio comes in as file uploads (MP3/WAV/FLAC, ≤10MB) or in-browser mic recordings (MediaRecorder, up to 5 min). Both land in a private storage bucket, with metadata in Postgres under RLS so users only ever see their own files.
 3. Playback uses short-lived signed URLs.
 4. "Transcribe" invokes the `transcribe` edge function with the file's storage path. The function authenticates the caller, downloads the file under the caller's own permissions (so you can only transcribe files you own), and forwards it to OpenAI's Whisper API. Whisper auto-detects the source language among 90+ supported, or translates any of them to English.
 

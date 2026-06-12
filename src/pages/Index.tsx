@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { FileUpload } from "@/components/FileUpload";
+import { AudioRecorder } from "@/components/AudioRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,6 +94,14 @@ const Index = () => {
                 </p>
               </div>
               <FileUpload onUploadComplete={fetchAudioFiles} />
+
+              <div className="mx-auto my-5 flex max-w-2xl items-center gap-4" aria-hidden="true">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">or</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <AudioRecorder onUploadComplete={fetchAudioFiles} />
             </div>
 
             <div>
@@ -119,7 +128,7 @@ const Index = () => {
                   </div>
                   <p className="font-medium">No recordings yet</p>
                   <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-                    Upload your first audio file above and it will show up here, ready to play and transcribe.
+                    Upload a file or record a clip above and it will show up here, ready to play and transcribe.
                   </p>
                 </div>
               ) : (
