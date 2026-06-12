@@ -4,8 +4,9 @@ import { FileUpload } from "@/components/FileUpload";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { Library, Music4 } from "lucide-react";
 
 interface AudioFile {
   id: string;
@@ -15,26 +16,27 @@ interface AudioFile {
 }
 
 const Index = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
-  const [isGlobalPlaying, setIsGlobalPlaying] = useState(false);
-  const navigate = useNavigate();
+  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
+  const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const fetchAudioFiles = useCallback(async () => {
     if (!user?.id) return;
 
     try {
-      console.log('Fetching audio files for user:', user.id);
       const { data, error } = await supabase
         .from('audio_files')
         .select('*')
@@ -47,11 +49,12 @@ const Index = () => {
         return;
       }
 
-      console.log('Fetched audio files:', data);
       setAudioFiles(data || []);
     } catch (error) {
       console.error('Error in fetchAudioFiles:', error);
       toast.error('Failed to load audio files');
+    } finally {
+      setIsLoadingFiles(false);
     }
   }, [user?.id]);
 
@@ -63,61 +66,79 @@ const Index = () => {
     }
   }, [user, fetchAudioFiles]);
 
+  // AudioCard performs the actual deletion before calling this.
   const handleDelete = async (fileId: string) => {
-    try {
-      // Wait for the deletion to complete before updating UI
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay to ensure deletion completes
-      
-      // Update UI after successful deletion
-      setAudioFiles(prev => prev.filter(file => file.id !== fileId));
-      
-      // Refetch to ensure consistency with server
-      await fetchAudioFiles();
-    } catch (error) {
-      console.error('Error handling deletion:', error);
-      // Refetch to restore state in case of error
-      await fetchAudioFiles();
-    }
+    setAudioFiles(prev => prev.filter(file => file.id !== fileId));
+    await fetchAudioFiles();
   };
 
-  const handlePlayStateChange = (isPlaying: boolean) => {
-    setIsGlobalPlaying(isPlaying);
+  const handlePlayStateChange = (fileId: string | null) => {
+    setCurrentPlayingId(fileId);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen">
       <Header />
       <Hero />
       {user && (
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl mx-auto space-y-12">
-            <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-100">
-              <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
-                Upload Your Audio File
-              </h2>
+        <div className="container mx-auto px-4 pb-24">
+          <div className="mx-auto max-w-4xl space-y-14">
+            <div id="upload-section" className="scroll-mt-24">
+              <div className="mb-6 text-center">
+                <h2 className="font-display text-3xl font-bold tracking-tight">
+                  Upload your <span className="text-gradient">audio</span>
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  MP3, WAV, or FLAC — up to 10MB
+                </p>
+              </div>
               <FileUpload onUploadComplete={fetchAudioFiles} />
             </div>
-            
-            {audioFiles.length > 0 && (
-              <div className="space-y-8">
-                <h3 className="text-2xl font-bold text-gray-800 text-center">
-                  Your Audio Library
-                </h3>
-                <div className="grid gap-6">
+
+            <div>
+              <div className="mb-6 flex items-center justify-center gap-3">
+                <Library className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-display text-2xl font-bold tracking-tight">Your library</h3>
+                {!isLoadingFiles && audioFiles.length > 0 && (
+                  <span className="rounded-full border border-border bg-secondary/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                    {audioFiles.length}
+                  </span>
+                )}
+              </div>
+
+              {isLoadingFiles ? (
+                <div className="space-y-5">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="glass h-44 animate-pulse rounded-2xl" />
+                  ))}
+                </div>
+              ) : audioFiles.length === 0 ? (
+                <div className="glass flex flex-col items-center rounded-2xl px-6 py-16 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
+                    <Music4 className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <p className="font-medium">No recordings yet</p>
+                  <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+                    Upload your first audio file above and it will show up here, ready to play and transcribe.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-5">
                   {audioFiles.map((file) => (
                     <AudioPlayer
                       key={file.id}
                       fileId={file.id}
                       fileName={file.file_name}
                       filePath={file.file_path}
+                      createdAt={file.created_at}
                       onDelete={handleDelete}
-                      isGlobalPlaying={isGlobalPlaying}
+                      currentPlayingId={currentPlayingId}
                       onPlayStateChange={handlePlayStateChange}
                     />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,1 +1,5 @@
-project_id = "kyfwqkoqequuvgstvvji"
+project_id = "jjtxasahxvqhslbdjmmh"
+
+[functions.transcribe]
+# Require a valid Supabase JWT; the function additionally checks for a real user session.
+verify_jwt = true

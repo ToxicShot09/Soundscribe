@@ -7,18 +7,20 @@ interface AudioPlayerProps {
   fileName: string;
   filePath: string;
   fileId: string;
+  createdAt?: string;
   onDelete: (id: string) => void;
-  isGlobalPlaying: boolean;
-  onPlayStateChange: (isPlaying: boolean) => void;
+  currentPlayingId: string | null;
+  onPlayStateChange: (fileId: string | null) => void;
 }
 
-export const AudioPlayer = ({ 
-  fileName, 
-  filePath, 
-  fileId, 
+export const AudioPlayer = ({
+  fileName,
+  filePath,
+  fileId,
+  createdAt,
   onDelete,
-  isGlobalPlaying,
-  onPlayStateChange 
+  currentPlayingId,
+  onPlayStateChange
 }: AudioPlayerProps) => {
   const [audioUrl, setAudioUrl] = useState<string>('');
 
@@ -48,20 +50,19 @@ export const AudioPlayer = ({
   }, [filePath]);
 
   if (!audioUrl) {
-    return null;
+    return <div className="glass h-44 w-full animate-pulse rounded-2xl" />;
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-4">
-      <AudioCard
-        fileName={fileName}
-        filePath={filePath}
-        fileId={fileId}
-        audioUrl={audioUrl}
-        onDelete={onDelete}
-        isGlobalPlaying={isGlobalPlaying}
-        onPlayStateChange={onPlayStateChange}
-      />
-    </div>
+    <AudioCard
+      fileName={fileName}
+      filePath={filePath}
+      fileId={fileId}
+      createdAt={createdAt}
+      audioUrl={audioUrl}
+      onDelete={onDelete}
+      currentPlayingId={currentPlayingId}
+      onPlayStateChange={onPlayStateChange}
+    />
   );
 };
